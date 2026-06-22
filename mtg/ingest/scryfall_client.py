@@ -10,10 +10,23 @@ HEADERS = {
 }
 
 
-def fetch_cards(query: str):
-    """Yield card dicts matching a Scryfall search query, following pagination."""
+def fetch_cards(query: str, exclude_basic_lands: bool = True):
+    """Yield card dicts matching a Scryfall search query, following pagination.
+
+    Uses unique=prints so every set printing, promo, and special edition comes
+    back as its own row (foil/nonfoil pricing lives on each printing's own
+    prices.usd / prices.usd_foil fields -- they aren't separate objects).
+
+    exclude_basic_lands uses Scryfall's "Basic" supertype filter, which only
+    matches the true basics (Mountain, Plains, Island, Swamp, Forest, Wastes)
+    -- dual lands like Plateau are untouched.
+    """
+    effective_query = query
+    if exclude_basic_lands:
+        effective_query = f"({query}) -type:basic"
+
     url = BASE_URL
-    params = {"q": query}
+    params = {"q": effective_query, "unique": "prints"}
 
     while url:
         response = requests.get(url, params=params, headers=HEADERS, timeout=30)
